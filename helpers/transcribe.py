@@ -47,9 +47,11 @@ def load_api_key() -> str:
 
 
 def extract_audio(video_path: Path, dest: Path) -> None:
+    # MP3 32kbps mono is ~7x smaller than WAV PCM — avoids Deepgram 504 on large files
     cmd = [
         "ffmpeg", "-y", "-i", str(video_path),
-        "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le",
+        "-vn", "-ac", "1", "-ar", "16000",
+        "-c:a", "libmp3lame", "-b:a", "32k",
         str(dest),
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -109,7 +111,7 @@ def call_deepgram(
             DEEPGRAM_URL,
             headers={
                 "Authorization": f"Token {api_key}",
-                "Content-Type": "audio/wav",
+                "Content-Type": "audio/mpeg",
             },
             params=params,
             data=f,
@@ -148,11 +150,11 @@ def transcribe_one(
 
     t0 = time.time()
     with tempfile.TemporaryDirectory() as tmp:
-        audio = Path(tmp) / f"{video.stem}.wav"
+        audio = Path(tmp) / f"{video.stem}.mp3"
         extract_audio(video, audio)
         size_mb = audio.stat().st_size / (1024 * 1024)
         if verbose:
-            print(f"  uploading {video.stem}.wav ({size_mb:.1f} MB)", flush=True)
+            print(f"  uploading {video.stem}.mp3 ({size_mb:.1f} MB)", flush=True)
         raw = call_deepgram(audio, api_key, language, num_speakers)
 
     try:
