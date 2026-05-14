@@ -607,7 +607,7 @@ def main() -> None:
     if not edl_path.exists():
         sys.exit(f"edl not found: {edl_path}")
 
-    edl = json.loads(edl_path.read_text())
+    edl = json.loads(edl_path.read_text(encoding="utf-8-sig"))
     edit_dir = edl_path.parent
     out_path = args.output.resolve()
 
